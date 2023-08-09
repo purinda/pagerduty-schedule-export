@@ -1,16 +1,20 @@
 package main
 
 import (
+	"encoding/csv"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"path"
 	"strings"
 	"time"
 )
 
 const (
-	CSVHeader = "DTSTART,DTEND,ATTENDEE"
+	CSVHeader = "Start,End,Owner"
 )
 
 type Event struct {
@@ -75,8 +79,36 @@ func FetchData(url string) (string, error) {
 	return string(body), nil
 }
 
+func WriteToCSV(events []Event, filename string) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write header
+	err = writer.Write([]string{CSVHeader})
+	if err != nil {
+		return fmt.Errorf("failed to write CSV header: %w", err)
+	}
+
+	// Write events
+	for _, event := range events {
+		err = writer.Write([]string{event.DTStart.String(), event.DTEnd.String(), event.Attendee})
+		if err != nil {
+			return fmt.Errorf("failed to write event to CSV: %w", err)
+		}
+	}
+
+	return nil
+}
+
+
 func main() {
-	url := flag.String("url", "https://example.com/path-to-ical-file.ics", "URL to fetch iCal data")
+	icalUrl := flag.String("url", "https://example.com/path-to-ical-file.ics", "URL to fetch iCal data")
 	tz := flag.String("timezone", "UTC", "Target timezone for date conversions (e.g., 'Australia/Sydney' for AEST)")
 	flag.Parse()
 
@@ -86,9 +118,9 @@ func main() {
 		return
 	}
 
-	data, err := FetchData(*url)
+	data, err := FetchData(*icalUrl)
 	if err != nil {
-		fmt.Printf("Error fetching iCal: %v\n", err)
+		fmt.Printf("Error fetching PagerDuty iCal: %v\n", err)
 		return
 	}
 
@@ -98,6 +130,20 @@ func main() {
 		return
 	}
 
-	csvData := EventsToCSV(events)
-	fmt.Println(csvData)
+	// Parse URL and extract the last segment
+	parsedURL, err := url.Parse(*icalUrl)
+	if err != nil {
+		fmt.Printf("Error parsing PagerDuty iCal URL: %v\n", err)
+		return
+	}
+	filenameSegment := path.Base(parsedURL.Path) // This gets the last segment of the URL path
+	csvFilename := filenameSegment + ".csv"
+
+	err = WriteToCSV(events, csvFilename)
+	if err != nil {
+		fmt.Printf("Error writing to CSV: %v\n", err)
+		return
+	}
+
+	fmt.Println("Data written to", csvFilename)
 }
