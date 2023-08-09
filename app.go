@@ -13,16 +13,60 @@ import (
 	"time"
 )
 
-const (
-	CSVHeader = "Start,End,Owner"
-)
-
 type Event struct {
 	DTStart  time.Time
 	DTEnd    time.Time
 	Attendee string
 }
 
+var CSVHeader = []string{"DTStart", "DT End", "Owner"}
+
+func main() {
+	// Command-line argument processing
+	icalUrl := flag.String("url", "", "URL to fetch the iCal data from.")
+	timezone := flag.String("timezone", "UTC", "Timezone for converting the iCal dates.")
+	flag.Parse()
+
+	if *icalUrl == "" {
+		fmt.Println("Please provide a URL using the -url flag.")
+		return
+	}
+
+	// Fetching iCal data from the URL
+	data, err := FetchData(*icalUrl)
+	if err != nil {
+		fmt.Printf("Error fetching data: %v\n", err)
+		return
+	}
+
+	// Parsing the iCal data
+	location, _ := time.LoadLocation(*timezone)
+	events, err := ParseICal(data, location)
+	if err != nil {
+		fmt.Printf("Error parsing iCal data: %v\n", err)
+		return
+	}
+
+	// Determine the filename for the output CSV
+	parsedURL, err := url.Parse(*icalUrl)
+	if err != nil {
+		fmt.Printf("Error parsing URL: %v\n", err)
+		return
+	}
+	filenameSegment := path.Base(parsedURL.Path)
+	csvFilename := filenameSegment + ".csv"
+
+	// Writing the parsed data to the CSV
+	err = WriteToCSV(events, csvFilename)
+	if err != nil {
+		fmt.Printf("Error writing to CSV: %v\n", err)
+		return
+	}
+	fmt.Println("Schedule exported to:", csvFilename)
+}
+
+// Parse the iCal content provided via 'data' variable and transform
+// datetime entries to required TZ format.
 func ParseICal(data string, location *time.Location) ([]Event, error) {
 	lines := strings.Split(data, "\n")
 	var events []Event
@@ -55,15 +99,16 @@ func ParseICal(data string, location *time.Location) ([]Event, error) {
 	return events, nil
 }
 
+// Format events to CSV format
 func EventsToCSV(events []Event) string {
 	builder := strings.Builder{}
-	builder.WriteString(CSVHeader + "\n")
 	for _, event := range events {
 		builder.WriteString(fmt.Sprintf("%s,%s,%s\n", event.DTStart, event.DTEnd, event.Attendee))
 	}
 	return builder.String()
 }
 
+// Retrieve iCal file from the provided URL
 func FetchData(url string) (string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -79,71 +124,36 @@ func FetchData(url string) (string, error) {
 	return string(body), nil
 }
 
+// Export the events extracted from the iCal as a CSV file
 func WriteToCSV(events []Event, filename string) error {
 	file, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %w", err)
+		return err
 	}
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
-	defer writer.Flush()
 
-	// Write header
-	err = writer.Write([]string{CSVHeader})
-	if err != nil {
-		return fmt.Errorf("failed to write CSV header: %w", err)
+	// Ensure every field is enclosed with quotes
+	writer.Comma = ','      // Field delimiter
+	writer.UseCRLF = false  // Use \n as line terminator
+	writer.UseCRLF = false  // Use \n as line terminator
+
+	if err := writer.Write(CSVHeader); err != nil {
+		return err
 	}
 
-	// Write events
 	for _, event := range events {
-		err = writer.Write([]string{event.DTStart.String(), event.DTEnd.String(), event.Attendee})
-		if err != nil {
-			return fmt.Errorf("failed to write event to CSV: %w", err)
+		if err := writer.Write([]string{event.DTStart.String(), event.DTEnd.String(), event.Attendee}); err != nil {
+			return err
 		}
 	}
 
+	writer.Flush()
+
+	if err := writer.Error(); err != nil {
+		return err
+	}
+
 	return nil
-}
-
-
-func main() {
-	icalUrl := flag.String("url", "https://example.com/path-to-ical-file.ics", "URL to fetch iCal data")
-	tz := flag.String("timezone", "UTC", "Target timezone for date conversions (e.g., 'Australia/Sydney' for AEST)")
-	flag.Parse()
-
-	location, err := time.LoadLocation(*tz)
-	if err != nil {
-		fmt.Printf("Error loading timezone: %v\n", err)
-		return
-	}
-
-	data, err := FetchData(*icalUrl)
-	if err != nil {
-		fmt.Printf("Error fetching PagerDuty iCal: %v\n", err)
-		return
-	}
-
-	events, err := ParseICal(data, location)
-	if err != nil {
-		fmt.Printf("Error parsing iCal data: %v\n", err)
-		return
-	}
-
-	// Parse URL and extract the last segment
-	parsedURL, err := url.Parse(*icalUrl)
-	if err != nil {
-		fmt.Printf("Error parsing PagerDuty iCal URL: %v\n", err)
-		return
-	}
-	filenameSegment := path.Base(parsedURL.Path) // This gets the last segment of the URL path
-	csvFilename := filenameSegment + ".csv"
-
-	err = WriteToCSV(events, csvFilename)
-	if err != nil {
-		fmt.Printf("Error writing to CSV: %v\n", err)
-		return
-	}
-
-	fmt.Println("Data written to", csvFilename)
 }
