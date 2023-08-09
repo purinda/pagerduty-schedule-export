@@ -15,6 +15,14 @@ Usage of ./pd-export:
     	URL to fetch iCal data (default "https://example.com/path-to-ical-file.ics")
 ```
 
+### Example Usage
+
+```sh
+./pd-export -timezone='Australia/Sydney' -url=https://yourdomain.pagerduty.com/private/8e4da5810dXXXXXX05137006f2a05caf226711e935591089cf2b74cac1c4/feed/A2UH2X5
+
+Data written to A2UH2X5.csv
+```
+
 ### How to Retrieve the PagerDuty iCal URL
 
 Navigate to the PD schedule page and copy the URL as per screenshot.
