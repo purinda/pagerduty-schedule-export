@@ -3,7 +3,7 @@ This solves one problem and one problem only, which is to take an export of PD s
 
 # Usage
 
-Download a release as per your system and run `--help` to view usage information.
+Download [latest release here](https://github.com/purinda/pagerduty-schedule-export/releases/latest) as per your system and run `--help` to view usage information.
 
 ```
 ./pd-export --help
@@ -14,6 +14,12 @@ Usage of ./pd-export:
   -url string
     	URL to fetch iCal data (default "https://example.com/path-to-ical-file.ics")
 ```
+
+### How to Retrieve the PagerDuty iCal URL
+
+Navigate to the PD schedule page and copy the URL as per screenshot.
+
+![Schedule Page](docs/pd-schedule.png)
 
 ## Building
 
