@@ -19,7 +19,7 @@ type Event struct {
 	Attendee string
 }
 
-var CSVHeader = []string{"DTStart", "DT End", "Owner"}
+var CSVHeader = []string{"DT Start", "DT End", "Owner"}
 
 func main() {
 	// Command-line argument processing
@@ -134,10 +134,9 @@ func WriteToCSV(events []Event, filename string) error {
 
 	writer := csv.NewWriter(file)
 
-	// Ensure every field is enclosed with quotes
-	writer.Comma = ','      // Field delimiter
-	writer.UseCRLF = false  // Use \n as line terminator
-	writer.UseCRLF = false  // Use \n as line terminator
+	// Ensure every field is comma separated and enclosed with quotes
+	writer.Comma = ','    // Field delimiter
+	writer.UseCRLF = true // Use \n as line terminator
 
 	if err := writer.Write(CSVHeader); err != nil {
 		return err
