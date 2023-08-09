@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -23,19 +23,20 @@ func ParseICal(data string, location *time.Location) ([]Event, error) {
 	lines := strings.Split(data, "\n")
 	var events []Event
 	var currentEvent Event
+	const iCalLayout = "20060102T150405Z"
 
 	for _, line := range lines {
 		switch {
 		case strings.HasPrefix(line, "BEGIN:VEVENT"):
 			currentEvent = Event{}
 		case strings.HasPrefix(line, "DTSTART"):
-			t, err := time.Parse(time.RFC3339, strings.Split(line, ":")[1])
+			t, err := time.Parse(iCalLayout, strings.Split(line, ":")[1])
 			if err != nil {
 				return nil, err
 			}
 			currentEvent.DTStart = t.In(location)
 		case strings.HasPrefix(line, "DTEND"):
-			t, err := time.Parse(time.RFC3339, strings.Split(line, ":")[1])
+			t, err := time.Parse(iCalLayout, strings.Split(line, ":")[1])
 			if err != nil {
 				return nil, err
 			}
@@ -66,7 +67,7 @@ func FetchData(url string) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to read response body: %w", err)
 	}
