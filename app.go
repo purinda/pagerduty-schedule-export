@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 	"time"
+	_ "time/tzdata"
 )
 
 type Event struct {
