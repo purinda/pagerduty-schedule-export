@@ -25,7 +25,7 @@ var CSVHeader = []string{"DT Start", "DT End", "Owner"}
 func main() {
 	// Command-line argument processing
 	icalUrl := flag.String("url", "", "URL to fetch the iCal data from.")
-	timezone := flag.String("timezone", "UTC", "Timezone for converting the iCal dates.")
+	tzHours := flag.Float64("timezone", 0, "Timezone offset in hours from UTC.")
 	flag.Parse()
 
 	if *icalUrl == "" {
@@ -41,8 +41,10 @@ func main() {
 	}
 
 	// Parsing the iCal data
-	location, _ := time.LoadLocation(*timezone)
-	events, err := ParseICal(data, location)
+	tzMins := *tzHours * 60
+	offsetDuration := time.Duration(tzMins) * time.Minute
+
+	events, err := ParseICal(data, offsetDuration)
 	if err != nil {
 		fmt.Printf("Error parsing iCal data: %v\n", err)
 		return
@@ -67,8 +69,8 @@ func main() {
 }
 
 // Parse the iCal content provided via 'data' variable and transform
-// datetime entries to required TZ format.
-func ParseICal(data string, location *time.Location) ([]Event, error) {
+// datetime entries to required TZ format as an offset.
+func ParseICal(data string, offset time.Duration) ([]Event, error) {
 	lines := strings.Split(data, "\n")
 	var events []Event
 	var currentEvent Event
@@ -83,13 +85,14 @@ func ParseICal(data string, location *time.Location) ([]Event, error) {
 			if err != nil {
 				return nil, err
 			}
-			currentEvent.DTStart = t.In(location)
+
+			currentEvent.DTStart = t.Add(offset)
 		case strings.HasPrefix(line, "DTEND"):
 			t, err := time.Parse(iCalLayout, strings.Split(line, ":")[1])
 			if err != nil {
 				return nil, err
 			}
-			currentEvent.DTEnd = t.In(location)
+			currentEvent.DTEnd = t.Add(offset)
 		case strings.HasPrefix(line, "ATTENDEE"):
 			currentEvent.Attendee = strings.Split(line, ":")[1]
 		case strings.HasPrefix(line, "END:VEVENT"):
