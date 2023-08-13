@@ -27,10 +27,7 @@ func main() {
 		return
 	}
 
-	// Parsing the iCal data
-	// tzMins := *tzHours * 60
-	// offsetDuration := time.Duration(tzMins) * time.Minute
-
+	// Parse the iCal data
 	events, err := ical.ParseICal(data, ical.FloatToDuration(*tzHours))
 	if err != nil {
 		fmt.Printf("Error parsing iCal data: %v\n", err)

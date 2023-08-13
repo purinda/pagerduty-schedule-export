@@ -9,16 +9,16 @@ Download [latest release here](https://github.com/purinda/pagerduty-schedule-exp
 ./pd-export --help
 
 Usage of ./pd-export:
-  -timezone string
-    	Target timezone for date conversions (e.g., 'Australia/Sydney' for AEST) (default "UTC")
+  -timezone float
+    Timezone offset in hours from UTC.
   -url string
-    	URL to fetch iCal data (default "https://example.com/path-to-ical-file.ics")
+    URL to fetch the iCal data from.
 ```
 
 ### Example Usage
 
 ```sh
-./pd-export -timezone='Australia/Sydney' -url=https://yourdomain.pagerduty.com/private/8e4da5810dXXXXXX05137006f2a05caf226711e935591089cf2b74cac1c4/feed/A2UH2X5
+./pd-export -timezone=10.5 -url=https://yourdomain.pagerduty.com/private/8e4da5810dXXXXXX05137006f2a05caf226711e935591089cf2b74cac1c4/feed/A2UH2X5
 
 Data written to A2UH2X5.csv
 ```
