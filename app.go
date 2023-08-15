@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/purinda/pagerduty-schedule-export/ical"
+	ical "github.com/purinda/pagerduty-schedule-export/pkg"
 )
 
 func main() {
